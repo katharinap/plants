@@ -43,15 +43,27 @@ class PlantIdViewModelTest {
     fun `initial state is Idle`() =
         runTest {
             assertEquals(PlantIdUiState.Idle, viewModel.uiState.value)
+            assertEquals(null, viewModel.selectedUri.value)
         }
+
+    @Test
+    fun `onImageSelected updates selectedUri and resets uiState`() = runTest {
+        val uri = Uri.parse("fake")
+        viewModel.onImageSelected(uri)
+        
+        assertEquals(uri, viewModel.selectedUri.value)
+        assertEquals(PlantIdUiState.Idle, viewModel.uiState.value)
+    }
 
     @Test
     fun `identifyPlants transitions Idle to Loading to Success`() =
         runTest {
+            viewModel.onImageSelected(Uri.parse("fake"))
+            
             viewModel.uiState.test {
                 assertEquals(PlantIdUiState.Idle, awaitItem())
 
-                viewModel.identifyPlants(listOf(ImageInput(Uri.parse("fake"))))
+                viewModel.identifyPlants()
 
                 assertEquals(PlantIdUiState.Loading, awaitItem())
 
@@ -66,12 +78,13 @@ class PlantIdViewModelTest {
     @Test
     fun `identifyPlants transitions to Error on failure`() =
         runTest {
+            viewModel.onImageSelected(Uri.parse("fake"))
             repository.shouldReturnError = true
 
             viewModel.uiState.test {
                 assertEquals(PlantIdUiState.Idle, awaitItem())
 
-                viewModel.identifyPlants(listOf(ImageInput(Uri.parse("fake"))))
+                viewModel.identifyPlants()
 
                 assertEquals(PlantIdUiState.Loading, awaitItem())
 

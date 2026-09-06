@@ -1,6 +1,9 @@
 package com.katharina.plants.ui.plantid
 
 import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -10,9 +13,10 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.katharina.plants.domain.model.ImageInput
+import coil.compose.AsyncImage
 import com.katharina.plants.domain.model.PlantIdentificationResult
 import com.katharina.plants.ui.theme.PlantsTheme
 
@@ -22,12 +26,22 @@ fun PlantIdScreen(
     modifier: Modifier = Modifier,
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val selectedUri by viewModel.selectedUri.collectAsState()
+
+    val launcher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.PickVisualMedia()
+    ) { uri ->
+        viewModel.onImageSelected(uri)
+    }
 
     PlantIdContent(
         uiState = uiState,
+        selectedUri = selectedUri,
+        onPickImageClick = {
+            launcher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+        },
         onIdentifyClick = {
-            // Trigger with a fake URI for now as per Step C1
-            viewModel.identifyPlants(listOf(ImageInput(Uri.EMPTY)))
+            viewModel.identifyPlants()
         },
         modifier = modifier
     )
@@ -36,6 +50,8 @@ fun PlantIdScreen(
 @Composable
 fun PlantIdContent(
     uiState: PlantIdUiState,
+    selectedUri: Uri?,
+    onPickImageClick: () -> Unit,
     onIdentifyClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -46,7 +62,7 @@ fun PlantIdContent(
                 .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        // Placeholder for image
+        // Selected image or placeholder
         Box(
             modifier =
                 Modifier
@@ -54,19 +70,29 @@ fun PlantIdContent(
                     .padding(bottom = 16.dp),
             contentAlignment = Alignment.Center,
         ) {
-            Text("Image Placeholder")
+            if (selectedUri != null) {
+                AsyncImage(
+                    model = selectedUri,
+                    contentDescription = "Selected plant image",
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
+                )
+            } else {
+                Text("No image selected")
+            }
         }
 
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceEvenly,
         ) {
-            Button(onClick = { /* Stub for Photo Picker */ }) {
+            Button(onClick = onPickImageClick) {
                 Text("Pick Image")
             }
 
             Button(
                 onClick = onIdentifyClick,
+                enabled = selectedUri != null && uiState !is PlantIdUiState.Loading
             ) {
                 Text("Identify")
             }
@@ -76,7 +102,11 @@ fun PlantIdContent(
 
         when (uiState) {
             is PlantIdUiState.Idle -> {
-                Text("Select an image to identify")
+                if (selectedUri != null) {
+                    Text("Ready to identify")
+                } else {
+                    Text("Select an image to identify")
+                }
             }
 
             is PlantIdUiState.Loading -> {
@@ -143,6 +173,8 @@ fun PlantIdScreenIdlePreview() {
     PlantsTheme {
         PlantIdContent(
             uiState = PlantIdUiState.Idle,
+            selectedUri = null,
+            onPickImageClick = {},
             onIdentifyClick = {}
         )
     }
@@ -154,6 +186,8 @@ fun PlantIdScreenLoadingPreview() {
     PlantsTheme {
         PlantIdContent(
             uiState = PlantIdUiState.Loading,
+            selectedUri = null,
+            onPickImageClick = {},
             onIdentifyClick = {}
         )
     }
@@ -176,6 +210,8 @@ fun PlantIdScreenSuccessPreview() {
                     )
                 )
             ),
+            selectedUri = null,
+            onPickImageClick = {},
             onIdentifyClick = {}
         )
     }
@@ -187,6 +223,8 @@ fun PlantIdScreenEmptyPreview() {
     PlantsTheme {
         PlantIdContent(
             uiState = PlantIdUiState.Success(results = emptyList()),
+            selectedUri = null,
+            onPickImageClick = {},
             onIdentifyClick = {}
         )
     }
@@ -198,6 +236,8 @@ fun PlantIdScreenErrorPreview() {
     PlantsTheme {
         PlantIdContent(
             uiState = PlantIdUiState.Error("Failed to connect to server"),
+            selectedUri = null,
+            onPickImageClick = {},
             onIdentifyClick = {}
         )
     }

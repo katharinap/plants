@@ -1,11 +1,9 @@
 package com.katharina.plants.ui.plantid
 
-import androidx.compose.ui.test.assertIsDisplayed
-import androidx.compose.ui.test.hasText
+import android.net.Uri
+import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.ComposeTestRule
 import androidx.compose.ui.test.junit4.createComposeRule
-import androidx.compose.ui.test.onNodeWithText
-import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.katharina.plants.data.repository.FakePlantRepository
 import com.katharina.plants.domain.model.ImageInput
@@ -24,12 +22,8 @@ class PlantIdScreenTest {
     val composeTestRule = createComposeRule()
 
     @Test
-    fun identifyButton_showsLoadingThenResults() {
+    fun identifyButton_disabledInitially() {
         val repository = FakePlantRepository()
-        // Make the delay longer so we can reliably catch the loading state if needed,
-        // though UnconfinedTestDispatcher usually skips it.
-        // For Compose tests, it's real time unless we use special dispatchers.
-        repository.simulatedDelayMillis = 1000L 
         val viewModel = PlantIdViewModel(repository)
 
         composeTestRule.setContent {
@@ -38,13 +32,28 @@ class PlantIdScreenTest {
             }
         }
 
-        // Initial state
-        composeTestRule.onNodeWithText("Select an image to identify").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Identify").assertIsNotEnabled()
+    }
+
+    @Test
+    fun identifyButton_showsLoadingThenResults() {
+        val repository = FakePlantRepository()
+        repository.simulatedDelayMillis = 500L 
+        val viewModel = PlantIdViewModel(repository)
+
+        composeTestRule.setContent {
+            PlantsTheme {
+                PlantIdScreen(viewModel = viewModel)
+            }
+        }
+
+        // Simulate image selection
+        viewModel.onImageSelected(Uri.EMPTY)
 
         // Click Identify
         composeTestRule.onNodeWithText("Identify").performClick()
 
-        // Should show results eventually (FakePlantRepository returns Monstera)
+        // Should show results eventually
         composeTestRule.waitUntil(5000) {
             composeTestRule.onAllNodesWithText("Monstera deliciosa").fetchSemanticsNodes().isNotEmpty()
         }
@@ -65,6 +74,7 @@ class PlantIdScreenTest {
             }
         }
 
+        viewModel.onImageSelected(Uri.EMPTY)
         composeTestRule.onNodeWithText("Identify").performClick()
 
         composeTestRule.waitUntil(5000) {
@@ -93,6 +103,7 @@ class PlantIdScreenTest {
             }
         }
 
+        viewModel.onImageSelected(Uri.EMPTY)
         composeTestRule.onNodeWithText("Identify").performClick()
 
         composeTestRule.waitUntil(5000) {
