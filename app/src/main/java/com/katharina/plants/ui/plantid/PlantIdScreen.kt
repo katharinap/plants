@@ -84,14 +84,25 @@ fun PlantIdContent(
             }
 
             is PlantIdUiState.Success -> {
-                PlantResultList(results = uiState.results)
+                if (uiState.results.isEmpty()) {
+                    Text("No plants identified. Try another photo.")
+                } else {
+                    PlantResultList(results = uiState.results)
+                }
             }
 
             is PlantIdUiState.Error -> {
-                Text(
-                    text = uiState.message,
-                    color = MaterialTheme.colorScheme.error,
-                )
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                        text = uiState.message,
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Button(onClick = onIdentifyClick) {
+                        Text("Retry")
+                    }
+                }
             }
         }
     }
@@ -165,6 +176,17 @@ fun PlantIdScreenSuccessPreview() {
                     )
                 )
             ),
+            onIdentifyClick = {}
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun PlantIdScreenEmptyPreview() {
+    PlantsTheme {
+        PlantIdContent(
+            uiState = PlantIdUiState.Success(results = emptyList()),
             onIdentifyClick = {}
         )
     }

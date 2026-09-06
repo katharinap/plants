@@ -8,6 +8,10 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.katharina.plants.data.repository.FakePlantRepository
+import com.katharina.plants.domain.model.ImageInput
+import com.katharina.plants.domain.model.Organ
+import com.katharina.plants.domain.model.PlantIdentificationResult
+import com.katharina.plants.domain.repository.PlantRepository
 import com.katharina.plants.ui.theme.PlantsTheme
 import org.junit.Rule
 import org.junit.Test
@@ -47,6 +51,55 @@ class PlantIdScreenTest {
 
         composeTestRule.onNodeWithText("Monstera deliciosa").assertIsDisplayed()
         composeTestRule.onNodeWithText("Confidence: 98%").assertIsDisplayed()
+    }
+
+    @Test
+    fun errorState_showsRetryButton() {
+        val repository = FakePlantRepository()
+        repository.shouldReturnError = true
+        val viewModel = PlantIdViewModel(repository)
+
+        composeTestRule.setContent {
+            PlantsTheme {
+                PlantIdScreen(viewModel = viewModel)
+            }
+        }
+
+        composeTestRule.onNodeWithText("Identify").performClick()
+
+        composeTestRule.waitUntil(5000) {
+            composeTestRule.onAllNodesWithText("Fake repository error").fetchSemanticsNodes().isNotEmpty()
+        }
+
+        composeTestRule.onNodeWithText("Fake repository error").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Retry").assertIsDisplayed()
+    }
+
+    @Test
+    fun emptySuccessState_showsNoResultsMessage() {
+        val repository = object : PlantRepository {
+            override suspend fun identify(
+                images: List<ImageInput>,
+                organs: List<Organ>
+            ): Result<List<PlantIdentificationResult>> {
+                return Result.success(emptyList())
+            }
+        }
+        val viewModel = PlantIdViewModel(repository)
+
+        composeTestRule.setContent {
+            PlantsTheme {
+                PlantIdScreen(viewModel = viewModel)
+            }
+        }
+
+        composeTestRule.onNodeWithText("Identify").performClick()
+
+        composeTestRule.waitUntil(5000) {
+            composeTestRule.onAllNodesWithText("No plants identified. Try another photo.").fetchSemanticsNodes().isNotEmpty()
+        }
+
+        composeTestRule.onNodeWithText("No plants identified. Try another photo.").assertIsDisplayed()
     }
 }
 
