@@ -48,7 +48,8 @@ Each step below is sized to be a single focused AI-assisted session (roughly
 **Step A1: Create project scaffold**
 - New Android Studio project, Compose template, min SDK 26+, package name set.
 - Add Hilt, Retrofit, Room, coroutines, testing libs to `libs.versions.toml`.
-- ✅ Verify: project builds and runs, shows default "Hello" screen.
+- Configure Edge-to-Edge support (WindowCompat.setDecorFitsSystemWindows).
+- ✅ Verify: project builds and runs, shows default "Hello" screen with content drawing behind system bars.
 
 **Step A2: App architecture skeleton**
 - Create empty packages: `data`, `domain`, `ui`, `di`.
@@ -121,6 +122,8 @@ Each step below is sized to be a single focused AI-assisted session (roughly
 **Step D3: Real repository implementation**
 - `PlantNetRepository` implements `PlantRepository`, converts DTOs → domain
   model, maps HTTP/network errors to domain `Result.failure`.
+- Implement image optimization utility (resizing/compression) to stay within
+  API limits and improve upload speed.
 - ✅ Verify: unit tests with MockWebServer for: success case, 4xx (bad
   request/quota), 5xx, and network timeout — each mapped to the right
   `Result`/UI state.
@@ -134,6 +137,12 @@ Each step below is sized to be a single focused AI-assisted session (roughly
   integration smoke test.
 
 ### Phase E — Camera Capture
+
+**Step E0: Camera permissions handling**
+- Implement a Compose-friendly permission request flow using
+  `rememberLauncherForActivityResult`.
+- ✅ Verify: manual test — app requests camera permission; handles "denied"
+  and "permanently denied" states gracefully.
 
 **Step E1: CameraX preview screen**
 - Add a capture screen with CameraX preview and a shutter button.
@@ -185,6 +194,12 @@ Each step below is sized to be a single focused AI-assisted session (roughly
   (Pl@ntNet requires attribution per their terms — check current terms
   before shipping even for personal use).
 - ✅ Verify: manual visual check.
+
+**Step G4: Location context (optional)**
+- Integrate location services to send GPS coordinates with the API request
+  to improve identification accuracy based on regional flora.
+- ✅ Verify: manual test — confirm coordinates are passed in the API request
+  when location permission is granted.
 
 ---
 
