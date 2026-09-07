@@ -1,5 +1,6 @@
 package com.katharina.plants.ui.plantid
 
+import android.Manifest
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
@@ -8,17 +9,20 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.katharina.plants.domain.model.PlantIdentificationResult
 import com.katharina.plants.ui.theme.PlantsTheme
+import kotlinx.coroutines.launch
 
 @Composable
 fun PlantIdScreen(
@@ -27,24 +31,52 @@ fun PlantIdScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val selectedUri by viewModel.selectedUri.collectAsState()
+    val context = LocalContext.current
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
 
-    val launcher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.PickVisualMedia()
-    ) { uri ->
-        viewModel.onImageSelected(uri)
+    val pickerLauncher =
+        rememberLauncherForActivityResult(
+            contract = ActivityResultContracts.PickVisualMedia(),
+        ) { uri ->
+            viewModel.onImageSelected(uri)
+        }
+
+    val cameraPermissionLauncher =
+        rememberLauncherForActivityResult(
+            contract = ActivityResultContracts.RequestPermission(),
+        ) { isGranted ->
+            if (isGranted) {
+                // Step E1 will implement navigation to Camera
+                scope.launch {
+                    snackbarHostState.showSnackbar("Camera permission granted! (Camera feature coming in next step)")
+                }
+            } else {
+                scope.launch {
+                    snackbarHostState.showSnackbar("Camera permission is required to take photos.")
+                }
+            }
+        }
+
+    Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
+        modifier = modifier,
+    ) { innerPadding ->
+        PlantIdContent(
+            uiState = uiState,
+            selectedUri = selectedUri,
+            onPickImageClick = {
+                pickerLauncher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+            },
+            onTakePhotoClick = {
+                cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
+            },
+            onIdentifyClick = {
+                viewModel.identifyPlants()
+            },
+            modifier = Modifier.padding(innerPadding),
+        )
     }
-
-    PlantIdContent(
-        uiState = uiState,
-        selectedUri = selectedUri,
-        onPickImageClick = {
-            launcher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
-        },
-        onIdentifyClick = {
-            viewModel.identifyPlants()
-        },
-        modifier = modifier
-    )
 }
 
 @Composable
@@ -52,6 +84,7 @@ fun PlantIdContent(
     uiState: PlantIdUiState,
     selectedUri: Uri?,
     onPickImageClick: () -> Unit,
+    onTakePhotoClick: () -> Unit,
     onIdentifyClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -75,7 +108,7 @@ fun PlantIdContent(
                     model = selectedUri,
                     contentDescription = "Selected plant image",
                     modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop
+                    contentScale = ContentScale.Crop,
                 )
             } else {
                 Text("No image selected")
@@ -90,12 +123,19 @@ fun PlantIdContent(
                 Text("Pick Image")
             }
 
-            Button(
-                onClick = onIdentifyClick,
-                enabled = selectedUri != null && uiState !is PlantIdUiState.Loading
-            ) {
-                Text("Identify")
+            Button(onClick = onTakePhotoClick) {
+                Text("Take Photo")
             }
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Button(
+            onClick = onIdentifyClick,
+            modifier = Modifier.fillMaxWidth(),
+            enabled = selectedUri != null && uiState !is PlantIdUiState.Loading,
+        ) {
+            Text("Identify")
         }
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -126,7 +166,7 @@ fun PlantIdContent(
                     Text(
                         text = uiState.message,
                         color = MaterialTheme.colorScheme.error,
-                        style = MaterialTheme.typography.bodyMedium
+                        style = MaterialTheme.typography.bodyMedium,
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Button(onClick = onIdentifyClick) {
@@ -175,7 +215,8 @@ fun PlantIdScreenIdlePreview() {
             uiState = PlantIdUiState.Idle,
             selectedUri = null,
             onPickImageClick = {},
-            onIdentifyClick = {}
+            onTakePhotoClick = {},
+            onIdentifyClick = {},
         )
     }
 }
@@ -188,7 +229,8 @@ fun PlantIdScreenLoadingPreview() {
             uiState = PlantIdUiState.Loading,
             selectedUri = null,
             onPickImageClick = {},
-            onIdentifyClick = {}
+            onTakePhotoClick = {},
+            onIdentifyClick = {},
         )
     }
 }
@@ -198,21 +240,24 @@ fun PlantIdScreenLoadingPreview() {
 fun PlantIdScreenSuccessPreview() {
     PlantsTheme {
         PlantIdContent(
-            uiState = PlantIdUiState.Success(
-                results = listOf(
-                    PlantIdentificationResult(
-                        speciesName = "Monstera deliciosa",
-                        scientificName = "Monstera deliciosa Liebm.",
-                        commonNames = listOf("Swiss cheese plant"),
-                        confidenceScore = 0.98,
-                        family = "Araceae",
-                        thumbnailUrl = null
-                    )
-                )
-            ),
+            uiState =
+                PlantIdUiState.Success(
+                    results =
+                        listOf(
+                            PlantIdentificationResult(
+                                speciesName = "Monstera deliciosa",
+                                scientificName = "Monstera deliciosa Liebm.",
+                                commonNames = listOf("Swiss cheese plant"),
+                                confidenceScore = 0.98,
+                                family = "Araceae",
+                                thumbnailUrl = null,
+                            ),
+                        ),
+                ),
             selectedUri = null,
             onPickImageClick = {},
-            onIdentifyClick = {}
+            onTakePhotoClick = {},
+            onIdentifyClick = {},
         )
     }
 }
@@ -225,7 +270,8 @@ fun PlantIdScreenEmptyPreview() {
             uiState = PlantIdUiState.Success(results = emptyList()),
             selectedUri = null,
             onPickImageClick = {},
-            onIdentifyClick = {}
+            onTakePhotoClick = {},
+            onIdentifyClick = {},
         )
     }
 }
@@ -238,7 +284,8 @@ fun PlantIdScreenErrorPreview() {
             uiState = PlantIdUiState.Error("Failed to connect to server"),
             selectedUri = null,
             onPickImageClick = {},
-            onIdentifyClick = {}
+            onTakePhotoClick = {},
+            onIdentifyClick = {},
         )
     }
 }
