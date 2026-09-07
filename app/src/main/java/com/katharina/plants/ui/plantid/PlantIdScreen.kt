@@ -1,6 +1,7 @@
 package com.katharina.plants.ui.plantid
 
 import android.Manifest
+import android.R
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
@@ -15,6 +16,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
@@ -30,6 +32,7 @@ import java.util.Locale
 fun PlantIdScreen(
     viewModel: PlantIdViewModel,
     onHistoryClick: () -> Unit,
+    onAboutClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -38,6 +41,7 @@ fun PlantIdScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     var isCameraVisible by remember { mutableStateOf(false) }
+    var showMenu by remember { mutableStateOf(false) }
 
     val pickerLauncher =
         rememberLauncherForActivityResult(
@@ -77,6 +81,26 @@ fun PlantIdScreen(
                     actions = {
                         TextButton(onClick = onHistoryClick) {
                             Text("History")
+                        }
+                        Box {
+                            IconButton(onClick = { showMenu = true }) {
+                                Icon(
+                                    painter = painterResource(id = R.drawable.ic_menu_more),
+                                    contentDescription = "More"
+                                )
+                            }
+                            DropdownMenu(
+                                expanded = showMenu,
+                                onDismissRequest = { showMenu = false }
+                            ) {
+                                DropdownMenuItem(
+                                    text = { Text("About") },
+                                    onClick = {
+                                        showMenu = false
+                                        onAboutClick()
+                                    }
+                                )
+                            }
                         }
                     }
                 )

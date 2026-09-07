@@ -4,7 +4,7 @@
     <selectionStates>
       <SelectionState runConfigName="app">
         <option name="selectionMode" value="DROPDOWN" />
-        <DropdownSelection timestamp="2026-09-07T13:32:22.219132200Z">
+        <DropdownSelection timestamp="2026-09-07T13:47:18.355375523Z">
           <Target type="DEFAULT_BOOT">
             <handle>
               <DeviceId pluginId="LocalEmulator" identifier="path=/home/katharina/.config/.android/avd/Pixel_8.avd" />
