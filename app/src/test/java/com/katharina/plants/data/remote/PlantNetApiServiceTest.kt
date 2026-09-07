@@ -61,12 +61,14 @@ class PlantNetApiServiceTest {
 
         server.enqueue(MockResponse().setBody(responseBody))
 
-        val part = MultipartBody.Part.createFormData(
+        val imagePart = MultipartBody.Part.createFormData(
             "images",
             "test.jpg",
             "dummy".toRequestBody("image/jpeg".toMediaType())
         )
-        val response = api.identify("fake-key", listOf(part), listOf("flower"))
+        val organPart = MultipartBody.Part.createFormData("organs", "flower")
+        
+        val response = api.identify("fake-key", listOf(imagePart), listOf(organPart))
 
         assertEquals(1, response.results.size)
         assertEquals(0.98, response.results[0].score, 0.001)

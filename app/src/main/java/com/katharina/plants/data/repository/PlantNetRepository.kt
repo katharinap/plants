@@ -11,6 +11,7 @@ import com.katharina.plants.domain.repository.PlantRepository
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.MultipartBody
 import okhttp3.RequestBody.Companion.toRequestBody
+import retrofit2.HttpException
 import javax.inject.Inject
 
 class PlantNetRepository @Inject constructor(
@@ -27,20 +28,25 @@ class PlantNetRepository @Inject constructor(
         val imageParts = images.mapIndexed { index, imageInput ->
             val optimizedImage = imageOptimizer.optimize(imageInput.uri)
             val requestBody = optimizedImage.toRequestBody("image/jpeg".toMediaType())
+            // Pl@ntNet expects 'images' part name
             MultipartBody.Part.createFormData("images", "image$index.jpg", requestBody)
         }
         
-        // If organs are provided, they must match images 1:1 or be passed correctly.
-        // For now, if organs is empty, we default to 'flower' for each image if not specified.
-        // Pl@ntNet API expects one 'organs' part for EACH image part.
         val organStrings = if (organs.isEmpty()) {
             images.map { "flower" }
         } else {
             organs.map { it.name.lowercase() }
         }
+
+        val organParts = organStrings.map { 
+            MultipartBody.Part.createFormData("organs", it) 
+        }
         
-        val response = api.identify(apiKey, imageParts, organStrings)
+        val response = api.identify(apiKey, imageParts, organParts)
         Result.success(response.results.map { it.toDomain() })
+    } catch (e: HttpException) {
+        val errorBody = e.response()?.errorBody()?.string()
+        Result.failure(Exception("API Error 400: $errorBody", e))
     } catch (e: Exception) {
         Result.failure(e)
     }

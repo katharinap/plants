@@ -10,6 +10,6 @@ interface PlantNetApiService {
     suspend fun identify(
         @Query("api-key") apiKey: String,
         @Part images: List<MultipartBody.Part>,
-        @Part("organs") organs: List<String>
+        @Part organs: List<MultipartBody.Part>
     ): PlantNetResponseDto
 }
