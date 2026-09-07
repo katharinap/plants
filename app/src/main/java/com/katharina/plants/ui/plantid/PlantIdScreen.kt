@@ -10,17 +10,14 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.katharina.plants.domain.model.PlantIdentificationResult
+import com.katharina.plants.ui.camera.CameraCaptureScreen
 import com.katharina.plants.ui.theme.PlantsTheme
 import kotlinx.coroutines.launch
 
@@ -31,9 +28,9 @@ fun PlantIdScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val selectedUri by viewModel.selectedUri.collectAsState()
-    val context = LocalContext.current
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
+    var isCameraVisible by remember { mutableStateOf(false) }
 
     val pickerLauncher =
         rememberLauncherForActivityResult(
@@ -47,10 +44,7 @@ fun PlantIdScreen(
             contract = ActivityResultContracts.RequestPermission(),
         ) { isGranted ->
             if (isGranted) {
-                // Step E1 will implement navigation to Camera
-                scope.launch {
-                    snackbarHostState.showSnackbar("Camera permission granted! (Camera feature coming in next step)")
-                }
+                isCameraVisible = true
             } else {
                 scope.launch {
                     snackbarHostState.showSnackbar("Camera permission is required to take photos.")
@@ -58,24 +52,36 @@ fun PlantIdScreen(
             }
         }
 
-    Scaffold(
-        snackbarHost = { SnackbarHost(snackbarHostState) },
-        modifier = modifier,
-    ) { innerPadding ->
-        PlantIdContent(
-            uiState = uiState,
-            selectedUri = selectedUri,
-            onPickImageClick = {
-                pickerLauncher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+    if (isCameraVisible) {
+        CameraCaptureScreen(
+            onImageCaptured = { uri ->
+                viewModel.onImageSelected(uri)
+                isCameraVisible = false
             },
-            onTakePhotoClick = {
-                cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
-            },
-            onIdentifyClick = {
-                viewModel.identifyPlants()
-            },
-            modifier = Modifier.padding(innerPadding),
+            onClose = {
+                isCameraVisible = false
+            }
         )
+    } else {
+        Scaffold(
+            snackbarHost = { SnackbarHost(snackbarHostState) },
+            modifier = modifier,
+        ) { innerPadding ->
+            PlantIdContent(
+                uiState = uiState,
+                selectedUri = selectedUri,
+                onPickImageClick = {
+                    pickerLauncher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+                },
+                onTakePhotoClick = {
+                    cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
+                },
+                onIdentifyClick = {
+                    viewModel.identifyPlants()
+                },
+                modifier = Modifier.padding(innerPadding),
+            )
+        }
     }
 }
 
