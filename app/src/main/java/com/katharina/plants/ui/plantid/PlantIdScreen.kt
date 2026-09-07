@@ -5,9 +5,11 @@ import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -16,10 +18,12 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import com.katharina.plants.domain.model.Organ
 import com.katharina.plants.domain.model.PlantIdentificationResult
 import com.katharina.plants.ui.camera.CameraCaptureScreen
 import com.katharina.plants.ui.theme.PlantsTheme
 import kotlinx.coroutines.launch
+import java.util.Locale
 
 @Composable
 fun PlantIdScreen(
@@ -28,6 +32,7 @@ fun PlantIdScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val selectedUri by viewModel.selectedUri.collectAsState()
+    val selectedOrgan by viewModel.selectedOrgan.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     var isCameraVisible by remember { mutableStateOf(false) }
@@ -70,12 +75,14 @@ fun PlantIdScreen(
             PlantIdContent(
                 uiState = uiState,
                 selectedUri = selectedUri,
+                selectedOrgan = selectedOrgan,
                 onPickImageClick = {
                     pickerLauncher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
                 },
                 onTakePhotoClick = {
                     cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
                 },
+                onOrganSelected = viewModel::onOrganSelected,
                 onIdentifyClick = {
                     viewModel.identifyPlants()
                 },
@@ -89,8 +96,10 @@ fun PlantIdScreen(
 fun PlantIdContent(
     uiState: PlantIdUiState,
     selectedUri: Uri?,
+    selectedOrgan: Organ,
     onPickImageClick: () -> Unit,
     onTakePhotoClick: () -> Unit,
+    onOrganSelected: (Organ) -> Unit,
     onIdentifyClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -131,6 +140,30 @@ fun PlantIdContent(
 
             Button(onClick = onTakePhotoClick) {
                 Text("Take Photo")
+            }
+        }
+
+        if (selectedUri != null) {
+            Spacer(modifier = Modifier.height(16.dp))
+            Text("Select plant organ:", style = MaterialTheme.typography.labelLarge)
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState())
+                    .padding(vertical = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Organ.entries.forEach { organ ->
+                    FilterChip(
+                        selected = selectedOrgan == organ,
+                        onClick = { onOrganSelected(organ) },
+                        label = {
+                            Text(organ.name.lowercase().replaceFirstChar {
+                                if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString()
+                            })
+                        }
+                    )
+                }
             }
         }
 
@@ -220,8 +253,26 @@ fun PlantIdScreenIdlePreview() {
         PlantIdContent(
             uiState = PlantIdUiState.Idle,
             selectedUri = null,
+            selectedOrgan = Organ.FLOWER,
             onPickImageClick = {},
             onTakePhotoClick = {},
+            onOrganSelected = {},
+            onIdentifyClick = {},
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun PlantIdScreenWithOrganSelectionPreview() {
+    PlantsTheme {
+        PlantIdContent(
+            uiState = PlantIdUiState.Idle,
+            selectedUri = Uri.parse("fake"),
+            selectedOrgan = Organ.LEAF,
+            onPickImageClick = {},
+            onTakePhotoClick = {},
+            onOrganSelected = {},
             onIdentifyClick = {},
         )
     }
@@ -234,8 +285,10 @@ fun PlantIdScreenLoadingPreview() {
         PlantIdContent(
             uiState = PlantIdUiState.Loading,
             selectedUri = null,
+            selectedOrgan = Organ.FLOWER,
             onPickImageClick = {},
             onTakePhotoClick = {},
+            onOrganSelected = {},
             onIdentifyClick = {},
         )
     }
@@ -261,8 +314,10 @@ fun PlantIdScreenSuccessPreview() {
                         ),
                 ),
             selectedUri = null,
+            selectedOrgan = Organ.FLOWER,
             onPickImageClick = {},
             onTakePhotoClick = {},
+            onOrganSelected = {},
             onIdentifyClick = {},
         )
     }
@@ -275,8 +330,10 @@ fun PlantIdScreenEmptyPreview() {
         PlantIdContent(
             uiState = PlantIdUiState.Success(results = emptyList()),
             selectedUri = null,
+            selectedOrgan = Organ.FLOWER,
             onPickImageClick = {},
             onTakePhotoClick = {},
+            onOrganSelected = {},
             onIdentifyClick = {},
         )
     }
@@ -289,8 +346,10 @@ fun PlantIdScreenErrorPreview() {
         PlantIdContent(
             uiState = PlantIdUiState.Error("Failed to connect to server"),
             selectedUri = null,
+            selectedOrgan = Organ.FLOWER,
             onPickImageClick = {},
             onTakePhotoClick = {},
+            onOrganSelected = {},
             onIdentifyClick = {},
         )
     }

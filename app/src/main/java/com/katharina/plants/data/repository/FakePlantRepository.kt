@@ -10,11 +10,18 @@ class FakePlantRepository : PlantRepository {
 
     var shouldReturnError = false
     var simulatedDelayMillis = 500L
+    
+    // Inspection properties for testing
+    var lastCapturedImages: List<ImageInput>? = null
+    var lastCapturedOrgans: List<Organ>? = null
 
     override suspend fun identify(
         images: List<ImageInput>,
         organs: List<Organ>
     ): Result<List<PlantIdentificationResult>> {
+        lastCapturedImages = images
+        lastCapturedOrgans = organs
+        
         delay(simulatedDelayMillis)
 
         if (shouldReturnError) {

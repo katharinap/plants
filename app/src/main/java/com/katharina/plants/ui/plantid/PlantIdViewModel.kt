@@ -24,17 +24,25 @@ class PlantIdViewModel @Inject constructor(
     private val _selectedUri = MutableStateFlow<Uri?>(null)
     val selectedUri: StateFlow<Uri?> = _selectedUri.asStateFlow()
 
+    private val _selectedOrgan = MutableStateFlow<Organ>(Organ.FLOWER)
+    val selectedOrgan: StateFlow<Organ> = _selectedOrgan.asStateFlow()
+
     fun onImageSelected(uri: Uri?) {
         _selectedUri.value = uri
         _uiState.value = PlantIdUiState.Idle
     }
 
-    fun identifyPlants(organs: List<Organ> = emptyList()) {
+    fun onOrganSelected(organ: Organ) {
+        _selectedOrgan.value = organ
+    }
+
+    fun identifyPlants() {
         val uri = _selectedUri.value ?: return
+        val organ = _selectedOrgan.value
 
         viewModelScope.launch {
             _uiState.value = PlantIdUiState.Loading
-            repository.identify(listOf(ImageInput(uri)), organs)
+            repository.identify(listOf(ImageInput(uri)), listOf(organ))
                 .onSuccess { results ->
                     _uiState.value = PlantIdUiState.Success(results)
                 }

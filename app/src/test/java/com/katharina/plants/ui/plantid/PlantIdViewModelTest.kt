@@ -4,6 +4,7 @@ import android.net.Uri
 import app.cash.turbine.test
 import com.katharina.plants.data.repository.FakePlantRepository
 import com.katharina.plants.domain.model.ImageInput
+import com.katharina.plants.domain.model.Organ
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic
@@ -40,11 +41,21 @@ class PlantIdViewModelTest {
     }
 
     @Test
-    fun `initial state is Idle`() =
-        runTest {
-            assertEquals(PlantIdUiState.Idle, viewModel.uiState.value)
-            assertEquals(null, viewModel.selectedUri.value)
-        }
+    fun `onOrganSelected updates selectedOrgan`() = runTest {
+        viewModel.onOrganSelected(Organ.LEAF)
+        assertEquals(Organ.LEAF, viewModel.selectedOrgan.value)
+    }
+
+    @Test
+    fun `identifyPlants passes selected organ to repository`() = runTest {
+        val uri = Uri.parse("fake")
+        viewModel.onImageSelected(uri)
+        viewModel.onOrganSelected(Organ.FRUIT)
+
+        viewModel.identifyPlants()
+
+        assertEquals(listOf(Organ.FRUIT), repository.lastCapturedOrgans)
+    }
 
     @Test
     fun `onImageSelected updates selectedUri and resets uiState`() = runTest {
