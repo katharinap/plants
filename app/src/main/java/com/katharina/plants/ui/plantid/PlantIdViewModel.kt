@@ -3,6 +3,8 @@ package com.katharina.plants.ui.plantid
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.katharina.plants.data.local.dao.IdentificationDao
+import com.katharina.plants.data.local.entity.IdentificationEntity
 import com.katharina.plants.domain.model.ImageInput
 import com.katharina.plants.domain.model.Organ
 import com.katharina.plants.domain.repository.PlantRepository
@@ -15,7 +17,8 @@ import javax.inject.Inject
 
 @HiltViewModel
 class PlantIdViewModel @Inject constructor(
-    private val repository: PlantRepository
+    private val repository: PlantRepository,
+    private val dao: IdentificationDao
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<PlantIdUiState>(PlantIdUiState.Idle)
@@ -45,6 +48,20 @@ class PlantIdViewModel @Inject constructor(
             repository.identify(listOf(ImageInput(uri)), listOf(organ))
                 .onSuccess { results ->
                     _uiState.value = PlantIdUiState.Success(results)
+                    
+                    // Save top result to history
+                    if (results.isNotEmpty()) {
+                        val topResult = results[0]
+                        dao.insertIdentification(
+                            IdentificationEntity(
+                                timestamp = System.currentTimeMillis(),
+                                imagePath = uri.toString(),
+                                speciesName = topResult.speciesName,
+                                scientificName = topResult.scientificName,
+                                confidenceScore = topResult.confidenceScore
+                            )
+                        )
+                    }
                 }
                 .onFailure { error ->
                     _uiState.value = PlantIdUiState.Error(error.message ?: "Unknown error occurred")
