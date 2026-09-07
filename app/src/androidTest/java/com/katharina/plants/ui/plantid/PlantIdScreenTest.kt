@@ -32,7 +32,10 @@ class PlantIdScreenTest {
 
         composeTestRule.setContent {
             PlantsTheme {
-                PlantIdScreen(viewModel = viewModel)
+                PlantIdScreen(
+                    viewModel = viewModel,
+                    onHistoryClick = {}
+                )
             }
         }
 
@@ -47,7 +50,10 @@ class PlantIdScreenTest {
 
         composeTestRule.setContent {
             PlantsTheme {
-                PlantIdScreen(viewModel = viewModel)
+                PlantIdScreen(
+                    viewModel = viewModel,
+                    onHistoryClick = {}
+                )
             }
         }
 
@@ -74,7 +80,10 @@ class PlantIdScreenTest {
 
         composeTestRule.setContent {
             PlantsTheme {
-                PlantIdScreen(viewModel = viewModel)
+                PlantIdScreen(
+                    viewModel = viewModel,
+                    onHistoryClick = {}
+                )
             }
         }
 
@@ -103,7 +112,10 @@ class PlantIdScreenTest {
 
         composeTestRule.setContent {
             PlantsTheme {
-                PlantIdScreen(viewModel = viewModel)
+                PlantIdScreen(
+                    viewModel = viewModel,
+                    onHistoryClick = {}
+                )
             }
         }
 

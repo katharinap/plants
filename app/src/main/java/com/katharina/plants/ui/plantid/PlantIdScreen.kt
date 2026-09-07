@@ -25,9 +25,11 @@ import com.katharina.plants.ui.theme.PlantsTheme
 import kotlinx.coroutines.launch
 import java.util.Locale
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PlantIdScreen(
     viewModel: PlantIdViewModel,
+    onHistoryClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -69,6 +71,16 @@ fun PlantIdScreen(
         )
     } else {
         Scaffold(
+            topBar = {
+                TopAppBar(
+                    title = { Text("Plant Identifier") },
+                    actions = {
+                        TextButton(onClick = onHistoryClick) {
+                            Text("History")
+                        }
+                    }
+                )
+            },
             snackbarHost = { SnackbarHost(snackbarHostState) },
             modifier = modifier,
         ) { innerPadding ->

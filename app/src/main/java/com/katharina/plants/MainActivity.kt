@@ -7,10 +7,14 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
+import com.katharina.plants.ui.history.HistoryScreen
 import com.katharina.plants.ui.plantid.PlantIdScreen
-import com.katharina.plants.ui.plantid.PlantIdViewModel
 import com.katharina.plants.ui.theme.PlantsTheme
 import dagger.hilt.android.AndroidEntryPoint
 
@@ -21,12 +25,24 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             PlantsTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    val viewModel: PlantIdViewModel = viewModel()
-                    PlantIdScreen(
-                        viewModel = viewModel,
-                        modifier = Modifier.padding(innerPadding)
-                    )
+                val navController = rememberNavController()
+                
+                NavHost(
+                    navController = navController,
+                    startDestination = "identify"
+                ) {
+                    composable("identify") {
+                        PlantIdScreen(
+                            viewModel = hiltViewModel(),
+                            onHistoryClick = { navController.navigate("history") }
+                        )
+                    }
+                    composable("history") {
+                        HistoryScreen(
+                            viewModel = hiltViewModel(),
+                            onBackClick = { navController.popBackStack() }
+                        )
+                    }
                 }
             }
         }
