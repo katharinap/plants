@@ -232,6 +232,13 @@ fun PlantResultList(results: List<PlantIdentificationResult>) {
                         text = result.speciesName,
                         style = MaterialTheme.typography.titleMedium,
                     )
+                    if (result.commonNames.isNotEmpty()) {
+                        Text(
+                            text = result.commonNames.joinToString(", "),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
                     Text(
                         text = result.scientificName,
                         style = MaterialTheme.typography.bodySmall,

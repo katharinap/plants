@@ -58,6 +58,7 @@ class PlantIdViewModel @Inject constructor(
                                 imagePath = uri.toString(),
                                 speciesName = topResult.speciesName,
                                 scientificName = topResult.scientificName,
+                                commonNames = topResult.commonNames.joinToString(", "),
                                 confidenceScore = topResult.confidenceScore
                             )
                         )

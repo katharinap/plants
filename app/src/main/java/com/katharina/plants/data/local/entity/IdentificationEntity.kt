@@ -11,5 +11,6 @@ data class IdentificationEntity(
     val imagePath: String,
     val speciesName: String,
     val scientificName: String,
+    val commonNames: String,
     val confidenceScore: Double
 )

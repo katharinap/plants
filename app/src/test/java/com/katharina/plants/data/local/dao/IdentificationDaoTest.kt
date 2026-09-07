@@ -42,6 +42,7 @@ class IdentificationDaoTest {
             imagePath = "/path/to/image.jpg",
             speciesName = "Monstera deliciosa",
             scientificName = "Monstera deliciosa Liebm.",
+            commonNames = "Swiss cheese plant",
             confidenceScore = 0.98
         )
 
@@ -50,6 +51,7 @@ class IdentificationDaoTest {
 
         assertEquals(1, all.size)
         assertEquals("Monstera deliciosa", all[0].speciesName)
+        assertEquals("Swiss cheese plant", all[0].commonNames)
         assertEquals(123456789L, all[0].timestamp)
     }
 
@@ -61,6 +63,7 @@ class IdentificationDaoTest {
             imagePath = "/path/to/image.jpg",
             speciesName = "Monstera deliciosa",
             scientificName = "Monstera deliciosa Liebm.",
+            commonNames = "Swiss cheese plant",
             confidenceScore = 0.98
         )
 
