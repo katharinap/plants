@@ -45,8 +45,15 @@ class PlantNetRepository @Inject constructor(
         val response = api.identify(apiKey, imageParts, organParts)
         Result.success(response.results.map { it.toDomain() })
     } catch (e: HttpException) {
-        val errorBody = e.response()?.errorBody()?.string()
-        Result.failure(Exception("API Error 400: $errorBody", e))
+        val message = when (e.code()) {
+            429 -> "Daily API quota exceeded. Please try again tomorrow."
+            400 -> {
+                val errorBody = e.response()?.errorBody()?.string()
+                "Invalid request: $errorBody"
+            }
+            else -> e.message()
+        }
+        Result.failure(Exception(message, e))
     } catch (e: Exception) {
         Result.failure(e)
     }

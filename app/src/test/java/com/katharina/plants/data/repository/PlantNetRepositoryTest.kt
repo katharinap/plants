@@ -83,6 +83,19 @@ class PlantNetRepositoryTest {
     }
 
     @Test
+    fun `identify returns failure on 429 with specific message`() = runTest {
+        val uri = mockk<Uri>()
+        coEvery { optimizer.optimize(uri) } returns byteArrayOf(1, 2, 3)
+        
+        server.enqueue(MockResponse().setResponseCode(429))
+
+        val result = repository.identify(listOf(ImageInput(uri)), emptyList())
+
+        assertTrue(result.isFailure)
+        assertEquals("Daily API quota exceeded. Please try again tomorrow.", result.exceptionOrNull()?.message)
+    }
+
+    @Test
     fun `identify returns failure on network timeout`() = runTest {
         val uri = mockk<Uri>()
         coEvery { optimizer.optimize(uri) } returns byteArrayOf(1, 2, 3)
