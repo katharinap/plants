@@ -7,12 +7,15 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.katharina.plants.data.local.dao.IdentificationDao
 import com.katharina.plants.data.repository.FakePlantRepository
+import com.katharina.plants.data.util.ConnectivityObserver
 import com.katharina.plants.domain.model.ImageInput
 import com.katharina.plants.domain.model.Organ
 import com.katharina.plants.domain.model.PlantIdentificationResult
 import com.katharina.plants.domain.repository.PlantRepository
 import com.katharina.plants.ui.theme.PlantsTheme
+import io.mockk.every
 import io.mockk.mockk
+import kotlinx.coroutines.flow.flowOf
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -24,11 +27,14 @@ class PlantIdScreenTest {
     val composeTestRule = createComposeRule()
     
     private val dao: IdentificationDao = mockk(relaxed = true)
+    private val connectivityObserver: ConnectivityObserver = mockk(relaxed = true) {
+        every { observe() } returns flowOf(ConnectivityObserver.Status.Available)
+    }
 
     @Test
     fun identifyButton_disabledInitially() {
         val repository = FakePlantRepository()
-        val viewModel = PlantIdViewModel(repository, dao)
+        val viewModel = PlantIdViewModel(repository, dao, connectivityObserver)
 
         composeTestRule.setContent {
             PlantsTheme {
@@ -46,7 +52,7 @@ class PlantIdScreenTest {
     fun identifyButton_showsLoadingThenResults() {
         val repository = FakePlantRepository()
         repository.simulatedDelayMillis = 500L 
-        val viewModel = PlantIdViewModel(repository, dao)
+        val viewModel = PlantIdViewModel(repository, dao, connectivityObserver)
 
         composeTestRule.setContent {
             PlantsTheme {
@@ -76,7 +82,7 @@ class PlantIdScreenTest {
     fun errorState_showsRetryButton() {
         val repository = FakePlantRepository()
         repository.shouldReturnError = true
-        val viewModel = PlantIdViewModel(repository, dao)
+        val viewModel = PlantIdViewModel(repository, dao, connectivityObserver)
 
         composeTestRule.setContent {
             PlantsTheme {
@@ -108,7 +114,7 @@ class PlantIdScreenTest {
                 return Result.success(emptyList())
             }
         }
-        val viewModel = PlantIdViewModel(repository, dao)
+        val viewModel = PlantIdViewModel(repository, dao, connectivityObserver)
 
         composeTestRule.setContent {
             PlantsTheme {

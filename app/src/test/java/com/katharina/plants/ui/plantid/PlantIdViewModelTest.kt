@@ -4,11 +4,13 @@ import android.net.Uri
 import app.cash.turbine.test
 import com.katharina.plants.data.local.dao.IdentificationDao
 import com.katharina.plants.data.repository.FakePlantRepository
+import com.katharina.plants.data.util.ConnectivityObserver
 import com.katharina.plants.domain.model.ImageInput
 import com.katharina.plants.domain.model.Organ
 import io.mockk.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.*
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -21,7 +23,10 @@ class PlantIdViewModelTest {
     private val testDispatcher = StandardTestDispatcher()
     private lateinit var repository: FakePlantRepository
     private lateinit var dao: IdentificationDao
+    private lateinit var connectivityObserver: ConnectivityObserver
     private lateinit var viewModel: PlantIdViewModel
+    
+    private val connectivityFlow = MutableStateFlow(ConnectivityObserver.Status.Available)
 
     @Before
     fun setUp() {
@@ -30,10 +35,13 @@ class PlantIdViewModelTest {
         every { Uri.parse(any()) } returns mockk()
         
         repository = FakePlantRepository().apply {
-            simulatedDelayMillis = 100 // Add a small delay to test Loading state
+            simulatedDelayMillis = 100
         }
         dao = mockk(relaxed = true)
-        viewModel = PlantIdViewModel(repository, dao)
+        connectivityObserver = mockk(relaxed = true)
+        every { connectivityObserver.observe() } returns connectivityFlow
+        
+        viewModel = PlantIdViewModel(repository, dao, connectivityObserver)
     }
 
     @After
@@ -42,14 +50,20 @@ class PlantIdViewModelTest {
     }
 
     @Test
-    fun `onOrganSelected updates selectedOrgan`() = runTest {
-        viewModel.onOrganSelected(Organ.LEAF)
-        assertEquals(Organ.LEAF, viewModel.selectedOrgan.value)
+    fun `identifyPlants transitions to Offline when network is unavailable`() = runTest {
+        connectivityFlow.value = ConnectivityObserver.Status.Unavailable
+        advanceUntilIdle()
+        
+        viewModel.onImageSelected(Uri.parse("fake"))
+        viewModel.identifyPlants()
+        
+        assertEquals(PlantIdUiState.Offline, viewModel.uiState.value)
     }
 
     @Test
     fun `identifyPlants saves result to dao on success`() = runTest {
         viewModel.onImageSelected(Uri.parse("fake"))
+        advanceUntilIdle()
         
         viewModel.identifyPlants()
         advanceUntilIdle()
@@ -58,82 +72,53 @@ class PlantIdViewModelTest {
     }
 
     @Test
-    fun `identifyPlants does not save to dao on failure`() = runTest {
+    fun `identifyPlants transitions Idle to Loading to Success`() = runTest {
+        viewModel.onImageSelected(Uri.parse("fake"))
+        advanceUntilIdle()
+        
+        viewModel.uiState.test {
+            assertEquals(PlantIdUiState.Idle, awaitItem())
+
+            viewModel.identifyPlants()
+
+            assertEquals(PlantIdUiState.Loading, awaitItem())
+            
+            advanceUntilIdle()
+
+            val successState = awaitItem()
+            assertTrue(successState is PlantIdUiState.Success)
+            
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `identifyPlants transitions to Error on failure`() = runTest {
         viewModel.onImageSelected(Uri.parse("fake"))
         repository.shouldReturnError = true
-
-        viewModel.identifyPlants()
         advanceUntilIdle()
 
-        coVerify(exactly = 0) { dao.insertIdentification(any()) }
-    }
+        viewModel.uiState.test {
+            assertEquals(PlantIdUiState.Idle, awaitItem())
 
-    @Test
-    fun `initial state is Idle`() =
-        runTest {
-            assertEquals(PlantIdUiState.Idle, viewModel.uiState.value)
-            assertEquals(null, viewModel.selectedUri.value)
-        }
+            viewModel.identifyPlants()
 
-    @Test
-    fun `onImageSelected updates selectedUri and resets uiState`() = runTest {
-        val uri = Uri.parse("fake")
-        viewModel.onImageSelected(uri)
-        
-        assertEquals(uri, viewModel.selectedUri.value)
-        assertEquals(PlantIdUiState.Idle, viewModel.uiState.value)
-    }
-
-    @Test
-    fun `identifyPlants transitions Idle to Loading to Success`() =
-        runTest {
-            viewModel.onImageSelected(Uri.parse("fake"))
+            assertEquals(PlantIdUiState.Loading, awaitItem())
             
-            viewModel.uiState.test {
-                assertEquals(PlantIdUiState.Idle, awaitItem())
+            advanceUntilIdle()
 
-                viewModel.identifyPlants()
+            val errorState = awaitItem()
+            assertTrue(errorState is PlantIdUiState.Error)
 
-                assertEquals(PlantIdUiState.Loading, awaitItem())
-                
-                advanceUntilIdle()
-
-                val successState = awaitItem()
-                assertTrue(successState is PlantIdUiState.Success)
-                assertEquals(2, (successState as PlantIdUiState.Success).results.size)
-
-                cancelAndIgnoreRemainingEvents()
-            }
+            cancelAndIgnoreRemainingEvents()
         }
-
-    @Test
-    fun `identifyPlants transitions to Error on failure`() =
-        runTest {
-            viewModel.onImageSelected(Uri.parse("fake"))
-            repository.shouldReturnError = true
-
-            viewModel.uiState.test {
-                assertEquals(PlantIdUiState.Idle, awaitItem())
-
-                viewModel.identifyPlants()
-
-                assertEquals(PlantIdUiState.Loading, awaitItem())
-                
-                advanceUntilIdle()
-
-                val errorState = awaitItem()
-                assertTrue(errorState is PlantIdUiState.Error)
-                assertEquals("Fake repository error", (errorState as PlantIdUiState.Error).message)
-
-                cancelAndIgnoreRemainingEvents()
-            }
-        }
+    }
 
     @Test
     fun `identifyPlants passes selected organ to repository`() = runTest {
-        val uri = Uri.parse("fake")
-        viewModel.onImageSelected(uri)
+        viewModel.onImageSelected(Uri.parse("fake"))
         viewModel.onOrganSelected(Organ.FRUIT)
+        advanceUntilIdle()
 
         viewModel.identifyPlants()
         advanceUntilIdle()

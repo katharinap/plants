@@ -4,7 +4,9 @@ import android.content.Context
 import androidx.room.Room
 import com.katharina.plants.data.local.PlantsDatabase
 import com.katharina.plants.data.local.dao.IdentificationDao
+import com.katharina.plants.data.util.ConnectivityObserver
 import com.katharina.plants.data.util.ImageOptimizer
+import com.katharina.plants.data.util.NetworkConnectivityObserver
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -29,6 +31,12 @@ object AppModule {
     @Provides
     fun provideIdentificationDao(db: PlantsDatabase): IdentificationDao {
         return db.dao
+    }
+
+    @Provides
+    @Singleton
+    fun provideConnectivityObserver(@ApplicationContext context: Context): ConnectivityObserver {
+        return NetworkConnectivityObserver(context)
     }
 
     @Provides

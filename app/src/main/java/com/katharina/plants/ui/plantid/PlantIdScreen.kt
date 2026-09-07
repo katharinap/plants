@@ -204,6 +204,19 @@ fun PlantIdContent(
                 CircularProgressIndicator()
             }
 
+            is PlantIdUiState.Offline -> {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                        text = "No internet connection.",
+                        color = MaterialTheme.colorScheme.error
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Button(onClick = onIdentifyClick) {
+                        Text("Retry")
+                    }
+                }
+            }
+
             is PlantIdUiState.Success -> {
                 if (uiState.results.isEmpty()) {
                     Text("No plants identified. Try another photo.")
