@@ -68,6 +68,9 @@ class PlantNetRepositoryTest {
 
         assertTrue(result.isSuccess)
         assertEquals("Monstera deliciosa", result.getOrThrow()[0].speciesName)
+
+        val request = server.takeRequest()
+        assertTrue(request.path?.contains("lang=de") == true)
     }
 
     @Test

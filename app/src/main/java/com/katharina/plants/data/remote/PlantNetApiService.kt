@@ -9,6 +9,7 @@ interface PlantNetApiService {
     @POST("v2/identify/all")
     suspend fun identify(
         @Query("api-key") apiKey: String,
+        @Query("lang") lang: String?,
         @Part images: List<MultipartBody.Part>,
         @Part organs: List<MultipartBody.Part>
     ): PlantNetResponseDto

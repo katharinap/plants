@@ -42,7 +42,7 @@ class PlantNetRepository @Inject constructor(
             MultipartBody.Part.createFormData("organs", it) 
         }
         
-        val response = api.identify(apiKey, imageParts, organParts)
+        val response = api.identify(apiKey, "de", imageParts, organParts)
         Result.success(response.results.map { it.toDomain() })
     } catch (e: HttpException) {
         val message = when (e.code()) {

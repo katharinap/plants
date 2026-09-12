@@ -68,7 +68,7 @@ class PlantNetApiServiceTest {
         )
         val organPart = MultipartBody.Part.createFormData("organs", "flower")
         
-        val response = api.identify("fake-key", listOf(imagePart), listOf(organPart))
+        val response = api.identify("fake-key", "de", listOf(imagePart), listOf(organPart))
 
         assertEquals(1, response.results.size)
         assertEquals(0.98, response.results[0].score, 0.001)
