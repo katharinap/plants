@@ -6,6 +6,10 @@ import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -20,6 +24,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import com.katharina.plants.data.util.ConnectivityObserver
 import com.katharina.plants.domain.model.Organ
 import com.katharina.plants.domain.model.PlantIdentificationResult
 import com.katharina.plants.ui.camera.CameraCaptureScreen
@@ -38,6 +43,7 @@ fun PlantIdScreen(
     val uiState by viewModel.uiState.collectAsState()
     val selectedUri by viewModel.selectedUri.collectAsState()
     val selectedOrgan by viewModel.selectedOrgan.collectAsState()
+    val networkStatus by viewModel.networkStatus.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     var isCameraVisible by remember { mutableStateOf(false) }
@@ -112,6 +118,7 @@ fun PlantIdScreen(
                 uiState = uiState,
                 selectedUri = selectedUri,
                 selectedOrgan = selectedOrgan,
+                networkStatus = networkStatus,
                 onPickImageClick = {
                     pickerLauncher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
                 },
@@ -133,6 +140,7 @@ fun PlantIdContent(
     uiState: PlantIdUiState,
     selectedUri: Uri?,
     selectedOrgan: Organ,
+    networkStatus: ConnectivityObserver.Status,
     onPickImageClick: () -> Unit,
     onTakePhotoClick: () -> Unit,
     onOrganSelected: (Organ) -> Unit,
@@ -140,125 +148,149 @@ fun PlantIdContent(
     modifier: Modifier = Modifier,
 ) {
     Column(
-        modifier =
-            modifier
-                .fillMaxSize()
-                .padding(16.dp),
+        modifier = modifier.fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        // Selected image or placeholder
-        Box(
-            modifier =
-                Modifier
-                    .size(200.dp)
-                    .padding(bottom = 16.dp),
-            contentAlignment = Alignment.Center,
+        AnimatedVisibility(
+            visible = networkStatus != ConnectivityObserver.Status.Available,
+            enter = expandVertically(),
+            exit = shrinkVertically()
         ) {
-            if (selectedUri != null) {
-                AsyncImage(
-                    model = selectedUri,
-                    contentDescription = "Selected plant image",
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop,
-                )
-            } else {
-                Text("No image selected")
-            }
-        }
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceEvenly,
-        ) {
-            Button(onClick = onPickImageClick) {
-                Text("Pick Image")
-            }
-
-            Button(onClick = onTakePhotoClick) {
-                Text("Take Photo")
-            }
-        }
-
-        if (selectedUri != null) {
-            Spacer(modifier = Modifier.height(16.dp))
-            Text("Select plant organ:", style = MaterialTheme.typography.labelLarge)
-            Row(
+            Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .horizontalScroll(rememberScrollState())
-                    .padding(vertical = 8.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    .background(MaterialTheme.colorScheme.errorContainer)
+                    .padding(8.dp),
+                contentAlignment = Alignment.Center
             ) {
-                Organ.entries.forEach { organ ->
-                    FilterChip(
-                        selected = selectedOrgan == organ,
-                        onClick = { onOrganSelected(organ) },
-                        label = {
-                            Text(organ.name.lowercase().replaceFirstChar {
-                                if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString()
-                            })
-                        }
-                    )
-                }
+                Text(
+                    text = "No internet connection",
+                    color = MaterialTheme.colorScheme.onErrorContainer,
+                    style = MaterialTheme.typography.labelMedium
+                )
             }
         }
 
-        Spacer(modifier = Modifier.height(8.dp))
-
-        Button(
-            onClick = onIdentifyClick,
-            modifier = Modifier.fillMaxWidth(),
-            enabled = selectedUri != null && uiState !is PlantIdUiState.Loading,
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Text("Identify")
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        when (uiState) {
-            is PlantIdUiState.Idle -> {
+            // Selected image or placeholder
+            Box(
+                modifier =
+                    Modifier
+                        .size(200.dp)
+                        .padding(bottom = 16.dp),
+                contentAlignment = Alignment.Center,
+            ) {
                 if (selectedUri != null) {
-                    Text("Ready to identify")
+                    AsyncImage(
+                        model = selectedUri,
+                        contentDescription = "Selected plant image",
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop,
+                    )
                 } else {
-                    Text("Select an image to identify")
+                    Text("No image selected")
                 }
             }
 
-            is PlantIdUiState.Loading -> {
-                CircularProgressIndicator()
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceEvenly,
+            ) {
+                Button(onClick = onPickImageClick) {
+                    Text("Pick Image")
+                }
+
+                Button(onClick = onTakePhotoClick) {
+                    Text("Take Photo")
+                }
             }
 
-            is PlantIdUiState.Offline -> {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(
-                        text = "No internet connection.",
-                        color = MaterialTheme.colorScheme.error
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Button(onClick = onIdentifyClick) {
-                        Text("Retry")
+            if (selectedUri != null) {
+                Spacer(modifier = Modifier.height(16.dp))
+                Text("Select plant organ:", style = MaterialTheme.typography.labelLarge)
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState())
+                        .padding(vertical = 8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Organ.entries.forEach { organ ->
+                        FilterChip(
+                            selected = selectedOrgan == organ,
+                            onClick = { onOrganSelected(organ) },
+                            label = {
+                                Text(organ.name.lowercase().replaceFirstChar {
+                                    if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString()
+                                })
+                            }
+                        )
                     }
                 }
             }
 
-            is PlantIdUiState.Success -> {
-                if (uiState.results.isEmpty()) {
-                    Text("No plants identified. Try another photo.")
-                } else {
-                    PlantResultList(results = uiState.results)
-                }
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Button(
+                onClick = onIdentifyClick,
+                modifier = Modifier.fillMaxWidth(),
+                enabled = selectedUri != null && uiState !is PlantIdUiState.Loading,
+            ) {
+                Text("Identify")
             }
 
-            is PlantIdUiState.Error -> {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(
-                        text = uiState.message,
-                        color = MaterialTheme.colorScheme.error,
-                        style = MaterialTheme.typography.bodyMedium,
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Button(onClick = onIdentifyClick) {
-                        Text("Retry")
+            Spacer(modifier = Modifier.height(16.dp))
+
+            when (uiState) {
+                is PlantIdUiState.Idle -> {
+                    if (selectedUri != null) {
+                        Text("Ready to identify")
+                    } else {
+                        Text("Select an image to identify")
+                    }
+                }
+
+                is PlantIdUiState.Loading -> {
+                    CircularProgressIndicator()
+                }
+
+                is PlantIdUiState.Offline -> {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            text = "No internet connection.",
+                            color = MaterialTheme.colorScheme.error
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Button(onClick = onIdentifyClick) {
+                            Text("Retry")
+                        }
+                    }
+                }
+
+                is PlantIdUiState.Success -> {
+                    if (uiState.results.isEmpty()) {
+                        Text("No plants identified. Try another photo.")
+                    } else {
+                        PlantResultList(results = uiState.results)
+                    }
+                }
+
+                is PlantIdUiState.Error -> {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            text = uiState.message,
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.bodyMedium,
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Button(onClick = onIdentifyClick) {
+                            Text("Retry")
+                        }
                     }
                 }
             }
@@ -310,6 +342,24 @@ fun PlantIdScreenIdlePreview() {
             uiState = PlantIdUiState.Idle,
             selectedUri = null,
             selectedOrgan = Organ.FLOWER,
+            networkStatus = ConnectivityObserver.Status.Available,
+            onPickImageClick = {},
+            onTakePhotoClick = {},
+            onOrganSelected = {},
+            onIdentifyClick = {},
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun PlantIdScreenOfflinePreview() {
+    PlantsTheme {
+        PlantIdContent(
+            uiState = PlantIdUiState.Idle,
+            selectedUri = null,
+            selectedOrgan = Organ.FLOWER,
+            networkStatus = ConnectivityObserver.Status.Unavailable,
             onPickImageClick = {},
             onTakePhotoClick = {},
             onOrganSelected = {},
@@ -326,6 +376,7 @@ fun PlantIdScreenWithOrganSelectionPreview() {
             uiState = PlantIdUiState.Idle,
             selectedUri = Uri.parse("fake"),
             selectedOrgan = Organ.LEAF,
+            networkStatus = ConnectivityObserver.Status.Available,
             onPickImageClick = {},
             onTakePhotoClick = {},
             onOrganSelected = {},
@@ -342,6 +393,7 @@ fun PlantIdScreenLoadingPreview() {
             uiState = PlantIdUiState.Loading,
             selectedUri = null,
             selectedOrgan = Organ.FLOWER,
+            networkStatus = ConnectivityObserver.Status.Available,
             onPickImageClick = {},
             onTakePhotoClick = {},
             onOrganSelected = {},
@@ -371,6 +423,7 @@ fun PlantIdScreenSuccessPreview() {
                 ),
             selectedUri = null,
             selectedOrgan = Organ.FLOWER,
+            networkStatus = ConnectivityObserver.Status.Available,
             onPickImageClick = {},
             onTakePhotoClick = {},
             onOrganSelected = {},
@@ -387,6 +440,7 @@ fun PlantIdScreenEmptyPreview() {
             uiState = PlantIdUiState.Success(results = emptyList()),
             selectedUri = null,
             selectedOrgan = Organ.FLOWER,
+            networkStatus = ConnectivityObserver.Status.Available,
             onPickImageClick = {},
             onTakePhotoClick = {},
             onOrganSelected = {},
@@ -403,6 +457,7 @@ fun PlantIdScreenErrorPreview() {
             uiState = PlantIdUiState.Error("Failed to connect to server"),
             selectedUri = null,
             selectedOrgan = Organ.FLOWER,
+            networkStatus = ConnectivityObserver.Status.Available,
             onPickImageClick = {},
             onTakePhotoClick = {},
             onOrganSelected = {},

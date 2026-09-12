@@ -33,7 +33,7 @@ class PlantIdViewModel @Inject constructor(
     val selectedOrgan: StateFlow<Organ> = _selectedOrgan.asStateFlow()
 
     val networkStatus = connectivityObserver.observe()
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), ConnectivityObserver.Status.Unavailable)
+        .stateIn(viewModelScope, SharingStarted.Eagerly, ConnectivityObserver.Status.Unavailable)
 
     fun onImageSelected(uri: Uri?) {
         _selectedUri.value = uri
