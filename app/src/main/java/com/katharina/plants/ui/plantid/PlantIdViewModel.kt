@@ -6,6 +6,8 @@ import androidx.lifecycle.viewModelScope
 import com.katharina.plants.data.local.dao.IdentificationDao
 import com.katharina.plants.data.local.entity.IdentificationEntity
 import com.katharina.plants.data.util.ConnectivityObserver
+import com.katharina.plants.data.util.FileStorage
+import com.katharina.plants.data.util.ImageOptimizer
 import com.katharina.plants.domain.model.ImageInput
 import com.katharina.plants.domain.model.Organ
 import com.katharina.plants.domain.repository.PlantRepository
@@ -20,7 +22,9 @@ import javax.inject.Inject
 class PlantIdViewModel @Inject constructor(
     private val repository: PlantRepository,
     private val dao: IdentificationDao,
-    private val connectivityObserver: ConnectivityObserver
+    private val connectivityObserver: ConnectivityObserver,
+    private val imageOptimizer: ImageOptimizer,
+    private val fileStorage: FileStorage
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<PlantIdUiState>(PlantIdUiState.Idle)
@@ -59,13 +63,16 @@ class PlantIdViewModel @Inject constructor(
                 .onSuccess { results ->
                     _uiState.value = PlantIdUiState.Success(results)
                     
-                    // Save top result to history
+                    // Save top result to history with permanent image path
                     if (results.isNotEmpty()) {
                         val topResult = results[0]
+                        val optimizedBytes = imageOptimizer.optimize(uri)
+                        val permanentPath = fileStorage.saveImage(optimizedBytes)
+
                         dao.insertIdentification(
                             IdentificationEntity(
                                 timestamp = System.currentTimeMillis(),
-                                imagePath = uri.toString(),
+                                imagePath = permanentPath,
                                 speciesName = topResult.speciesName,
                                 scientificName = topResult.scientificName,
                                 commonNames = topResult.commonNames.joinToString(", "),

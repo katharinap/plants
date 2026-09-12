@@ -5,6 +5,8 @@ import app.cash.turbine.test
 import com.katharina.plants.data.local.dao.IdentificationDao
 import com.katharina.plants.data.repository.FakePlantRepository
 import com.katharina.plants.data.util.ConnectivityObserver
+import com.katharina.plants.data.util.FileStorage
+import com.katharina.plants.data.util.ImageOptimizer
 import com.katharina.plants.domain.model.ImageInput
 import com.katharina.plants.domain.model.Organ
 import io.mockk.*
@@ -24,6 +26,8 @@ class PlantIdViewModelTest {
     private lateinit var repository: FakePlantRepository
     private lateinit var dao: IdentificationDao
     private lateinit var connectivityObserver: ConnectivityObserver
+    private lateinit var imageOptimizer: ImageOptimizer
+    private lateinit var fileStorage: FileStorage
     private lateinit var viewModel: PlantIdViewModel
     
     private val connectivityFlow = MutableStateFlow(ConnectivityObserver.Status.Available)
@@ -39,9 +43,12 @@ class PlantIdViewModelTest {
         }
         dao = mockk(relaxed = true)
         connectivityObserver = mockk(relaxed = true)
+        imageOptimizer = mockk()
+        coEvery { imageOptimizer.optimize(any()) } returns byteArrayOf(0)
+        fileStorage = mockk(relaxed = true)
         every { connectivityObserver.observe() } returns connectivityFlow
         
-        viewModel = PlantIdViewModel(repository, dao, connectivityObserver)
+        viewModel = PlantIdViewModel(repository, dao, connectivityObserver, imageOptimizer, fileStorage)
     }
 
     @After

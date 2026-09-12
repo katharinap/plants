@@ -8,11 +8,14 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.katharina.plants.data.local.dao.IdentificationDao
 import com.katharina.plants.data.repository.FakePlantRepository
 import com.katharina.plants.data.util.ConnectivityObserver
+import com.katharina.plants.data.util.FileStorage
+import com.katharina.plants.data.util.ImageOptimizer
 import com.katharina.plants.domain.model.ImageInput
 import com.katharina.plants.domain.model.Organ
 import com.katharina.plants.domain.model.PlantIdentificationResult
 import com.katharina.plants.domain.repository.PlantRepository
 import com.katharina.plants.ui.theme.PlantsTheme
+import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.flow.flowOf
@@ -30,17 +33,22 @@ class PlantIdScreenTest {
     private val connectivityObserver: ConnectivityObserver = mockk(relaxed = true) {
         every { observe() } returns flowOf(ConnectivityObserver.Status.Available)
     }
+    private val imageOptimizer: ImageOptimizer = mockk {
+        coEvery { optimize(any()) } returns byteArrayOf(0)
+    }
+    private val fileStorage: FileStorage = mockk(relaxed = true)
 
     @Test
     fun identifyButton_disabledInitially() {
         val repository = FakePlantRepository()
-        val viewModel = PlantIdViewModel(repository, dao, connectivityObserver)
+        val viewModel = PlantIdViewModel(repository, dao, connectivityObserver, imageOptimizer, fileStorage)
 
         composeTestRule.setContent {
             PlantsTheme {
                 PlantIdScreen(
                     viewModel = viewModel,
-                    onHistoryClick = {}
+                    onHistoryClick = {},
+                    onAboutClick = {}
                 )
             }
         }
@@ -52,13 +60,14 @@ class PlantIdScreenTest {
     fun identifyButton_showsLoadingThenResults() {
         val repository = FakePlantRepository()
         repository.simulatedDelayMillis = 500L 
-        val viewModel = PlantIdViewModel(repository, dao, connectivityObserver)
+        val viewModel = PlantIdViewModel(repository, dao, connectivityObserver, imageOptimizer, fileStorage)
 
         composeTestRule.setContent {
             PlantsTheme {
                 PlantIdScreen(
                     viewModel = viewModel,
-                    onHistoryClick = {}
+                    onHistoryClick = {},
+                    onAboutClick = {}
                 )
             }
         }
@@ -82,13 +91,14 @@ class PlantIdScreenTest {
     fun errorState_showsRetryButton() {
         val repository = FakePlantRepository()
         repository.shouldReturnError = true
-        val viewModel = PlantIdViewModel(repository, dao, connectivityObserver)
+        val viewModel = PlantIdViewModel(repository, dao, connectivityObserver, imageOptimizer, fileStorage)
 
         composeTestRule.setContent {
             PlantsTheme {
                 PlantIdScreen(
                     viewModel = viewModel,
-                    onHistoryClick = {}
+                    onHistoryClick = {},
+                    onAboutClick = {}
                 )
             }
         }
@@ -114,13 +124,14 @@ class PlantIdScreenTest {
                 return Result.success(emptyList())
             }
         }
-        val viewModel = PlantIdViewModel(repository, dao, connectivityObserver)
+        val viewModel = PlantIdViewModel(repository, dao, connectivityObserver, imageOptimizer, fileStorage)
 
         composeTestRule.setContent {
             PlantsTheme {
                 PlantIdScreen(
                     viewModel = viewModel,
-                    onHistoryClick = {}
+                    onHistoryClick = {},
+                    onAboutClick = {}
                 )
             }
         }

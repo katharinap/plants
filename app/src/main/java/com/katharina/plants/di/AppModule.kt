@@ -5,6 +5,7 @@ import androidx.room.Room
 import com.katharina.plants.data.local.PlantsDatabase
 import com.katharina.plants.data.local.dao.IdentificationDao
 import com.katharina.plants.data.util.ConnectivityObserver
+import com.katharina.plants.data.util.FileStorage
 import com.katharina.plants.data.util.ImageOptimizer
 import com.katharina.plants.data.util.NetworkConnectivityObserver
 import dagger.Module
@@ -37,6 +38,12 @@ object AppModule {
     @Singleton
     fun provideConnectivityObserver(@ApplicationContext context: Context): ConnectivityObserver {
         return NetworkConnectivityObserver(context)
+    }
+
+    @Provides
+    @Singleton
+    fun provideFileStorage(@ApplicationContext context: Context): FileStorage {
+        return FileStorage(context)
     }
 
     @Provides
