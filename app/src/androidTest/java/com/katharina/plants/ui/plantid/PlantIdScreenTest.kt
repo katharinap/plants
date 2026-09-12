@@ -48,7 +48,8 @@ class PlantIdScreenTest {
                 PlantIdScreen(
                     viewModel = viewModel,
                     onHistoryClick = {},
-                    onAboutClick = {}
+                    onAboutClick = {},
+                    onSettingsClick = {}
                 )
             }
         }
@@ -67,7 +68,8 @@ class PlantIdScreenTest {
                 PlantIdScreen(
                     viewModel = viewModel,
                     onHistoryClick = {},
-                    onAboutClick = {}
+                    onAboutClick = {},
+                    onSettingsClick = {}
                 )
             }
         }
@@ -98,7 +100,8 @@ class PlantIdScreenTest {
                 PlantIdScreen(
                     viewModel = viewModel,
                     onHistoryClick = {},
-                    onAboutClick = {}
+                    onAboutClick = {},
+                    onSettingsClick = {}
                 )
             }
         }
@@ -131,7 +134,8 @@ class PlantIdScreenTest {
                 PlantIdScreen(
                     viewModel = viewModel,
                     onHistoryClick = {},
-                    onAboutClick = {}
+                    onAboutClick = {},
+                    onSettingsClick = {}
                 )
             }
         }

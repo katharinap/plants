@@ -38,6 +38,7 @@ fun PlantIdScreen(
     viewModel: PlantIdViewModel,
     onHistoryClick: () -> Unit,
     onAboutClick: () -> Unit,
+    onSettingsClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -99,6 +100,13 @@ fun PlantIdScreen(
                                 expanded = showMenu,
                                 onDismissRequest = { showMenu = false }
                             ) {
+                                DropdownMenuItem(
+                                    text = { Text("Settings") },
+                                    onClick = {
+                                        showMenu = false
+                                        onSettingsClick()
+                                    }
+                                )
                                 DropdownMenuItem(
                                     text = { Text("About") },
                                     onClick = {

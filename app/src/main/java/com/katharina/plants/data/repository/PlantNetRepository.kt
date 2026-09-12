@@ -8,6 +8,8 @@ import com.katharina.plants.domain.model.ImageInput
 import com.katharina.plants.domain.model.Organ
 import com.katharina.plants.domain.model.PlantIdentificationResult
 import com.katharina.plants.domain.repository.PlantRepository
+import com.katharina.plants.domain.repository.SettingsRepository
+import kotlinx.coroutines.flow.first
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.MultipartBody
 import okhttp3.RequestBody.Companion.toRequestBody
@@ -16,7 +18,8 @@ import javax.inject.Inject
 
 class PlantNetRepository @Inject constructor(
     private val api: PlantNetApiService,
-    private val imageOptimizer: ImageOptimizer
+    private val imageOptimizer: ImageOptimizer,
+    private val settingsRepository: SettingsRepository
 ) : PlantRepository {
 
     override suspend fun identify(
@@ -24,6 +27,7 @@ class PlantNetRepository @Inject constructor(
         organs: List<Organ>
     ): Result<List<PlantIdentificationResult>> = try {
         val apiKey = BuildConfig.PLANTNET_API_KEY
+        val lang = settingsRepository.languageCode.first()
         
         val imageParts = images.mapIndexed { index, imageInput ->
             val optimizedImage = imageOptimizer.optimize(imageInput.uri)
@@ -42,7 +46,7 @@ class PlantNetRepository @Inject constructor(
             MultipartBody.Part.createFormData("organs", it) 
         }
         
-        val response = api.identify(apiKey, "de", imageParts, organParts)
+        val response = api.identify(apiKey, lang, imageParts, organParts)
         Result.success(response.results.map { it.toDomain() })
     } catch (e: HttpException) {
         val message = when (e.code()) {

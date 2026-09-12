@@ -11,6 +11,7 @@ import androidx.navigation.compose.rememberNavController
 import com.katharina.plants.ui.about.AboutScreen
 import com.katharina.plants.ui.history.HistoryScreen
 import com.katharina.plants.ui.plantid.PlantIdScreen
+import com.katharina.plants.ui.settings.SettingsScreen
 import com.katharina.plants.ui.theme.PlantsTheme
 import dagger.hilt.android.AndroidEntryPoint
 
@@ -31,11 +32,18 @@ class MainActivity : ComponentActivity() {
                         PlantIdScreen(
                             viewModel = hiltViewModel(),
                             onHistoryClick = { navController.navigate("history") },
-                            onAboutClick = { navController.navigate("about") }
+                            onAboutClick = { navController.navigate("about") },
+                            onSettingsClick = { navController.navigate("settings") }
                         )
                     }
                     composable("history") {
                         HistoryScreen(
+                            viewModel = hiltViewModel(),
+                            onBackClick = { navController.popBackStack() }
+                        )
+                    }
+                    composable("settings") {
+                        SettingsScreen(
                             viewModel = hiltViewModel(),
                             onBackClick = { navController.popBackStack() }
                         )

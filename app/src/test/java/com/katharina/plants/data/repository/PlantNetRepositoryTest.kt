@@ -4,8 +4,11 @@ import android.net.Uri
 import com.katharina.plants.data.remote.PlantNetApiService
 import com.katharina.plants.data.util.ImageOptimizer
 import com.katharina.plants.domain.model.ImageInput
+import com.katharina.plants.domain.repository.SettingsRepository
 import io.mockk.coEvery
+import io.mockk.every
 import io.mockk.mockk
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
 import okhttp3.MediaType.Companion.toMediaType
@@ -25,6 +28,7 @@ class PlantNetRepositoryTest {
     private lateinit var server: MockWebServer
     private lateinit var repository: PlantNetRepository
     private val optimizer: ImageOptimizer = mockk()
+    private val settingsRepository: SettingsRepository = mockk()
     private val json = Json { ignoreUnknownKeys = true }
 
     @Before
@@ -36,7 +40,7 @@ class PlantNetRepositoryTest {
             .build()
             .create(PlantNetApiService::class.java)
         
-        repository = PlantNetRepository(api, optimizer)
+        repository = PlantNetRepository(api, optimizer, settingsRepository)
     }
 
     @After
@@ -48,6 +52,7 @@ class PlantNetRepositoryTest {
     fun `identify returns success on 200`() = runTest {
         val uri = mockk<Uri>()
         coEvery { optimizer.optimize(uri) } returns byteArrayOf(1, 2, 3)
+        every { settingsRepository.languageCode } returns flowOf("de")
         
         val responseBody = """
             {
@@ -77,6 +82,7 @@ class PlantNetRepositoryTest {
     fun `identify returns failure on 403`() = runTest {
         val uri = mockk<Uri>()
         coEvery { optimizer.optimize(uri) } returns byteArrayOf(1, 2, 3)
+        every { settingsRepository.languageCode } returns flowOf("en")
         
         server.enqueue(MockResponse().setResponseCode(403).setBody("Invalid API Key"))
 
@@ -89,6 +95,7 @@ class PlantNetRepositoryTest {
     fun `identify returns failure on 429 with specific message`() = runTest {
         val uri = mockk<Uri>()
         coEvery { optimizer.optimize(uri) } returns byteArrayOf(1, 2, 3)
+        every { settingsRepository.languageCode } returns flowOf("en")
         
         server.enqueue(MockResponse().setResponseCode(429))
 
@@ -102,6 +109,7 @@ class PlantNetRepositoryTest {
     fun `identify returns failure on network timeout`() = runTest {
         val uri = mockk<Uri>()
         coEvery { optimizer.optimize(uri) } returns byteArrayOf(1, 2, 3)
+        every { settingsRepository.languageCode } returns flowOf("en")
         
         server.enqueue(MockResponse().setBody("{}").setBodyDelay(2, TimeUnit.SECONDS))
 
