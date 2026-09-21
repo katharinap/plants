@@ -15,6 +15,9 @@ interface IdentificationDao {
     @Query("SELECT * FROM identifications ORDER BY timestamp DESC")
     fun getAllIdentifications(): Flow<List<IdentificationEntity>>
 
+    @Query("SELECT * FROM identifications WHERE id = :id")
+    suspend fun getIdentificationById(id: Long): IdentificationEntity?
+
     @Query("DELETE FROM identifications WHERE id = :id")
     suspend fun deleteIdentification(id: Long)
 }

@@ -73,4 +73,22 @@ class IdentificationDaoTest {
         val all = dao.getAllIdentifications().first()
         assertEquals(0, all.size)
     }
+
+    @Test
+    fun `getIdentificationById returns correct record`() = runTest {
+        val entity = IdentificationEntity(
+            id = 10,
+            timestamp = 123456789L,
+            imagePath = "/path/to/image.jpg",
+            speciesName = "Monstera deliciosa",
+            scientificName = "Monstera deliciosa Liebm.",
+            commonNames = "Swiss cheese plant",
+            confidenceScore = 0.98
+        )
+
+        dao.insertIdentification(entity)
+        
+        val found = dao.getIdentificationById(10)
+        assertEquals(entity, found)
+    }
 }

@@ -1,5 +1,6 @@
 package com.katharina.plants.ui.history
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -21,6 +22,7 @@ import java.util.*
 @Composable
 fun HistoryScreen(
     viewModel: HistoryViewModel,
+    onItemClick: (Long) -> Unit,
     onBackClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -28,6 +30,7 @@ fun HistoryScreen(
 
     HistoryContent(
         identifications = identifications,
+        onItemClick = onItemClick,
         onDeleteClick = viewModel::deleteIdentification,
         onBackClick = onBackClick,
         modifier = modifier
@@ -38,6 +41,7 @@ fun HistoryScreen(
 @Composable
 fun HistoryContent(
     identifications: List<IdentificationEntity>,
+    onItemClick: (Long) -> Unit,
     onDeleteClick: (Long) -> Unit,
     onBackClick: () -> Unit,
     modifier: Modifier = Modifier
@@ -75,6 +79,7 @@ fun HistoryContent(
                 items(identifications, key = { it.id }) { entity ->
                     HistoryItem(
                         entity = entity,
+                        onItemClick = { onItemClick(entity.id) },
                         onDeleteClick = { onDeleteClick(entity.id) }
                     )
                 }
@@ -86,10 +91,13 @@ fun HistoryContent(
 @Composable
 fun HistoryItem(
     entity: IdentificationEntity,
+    onItemClick: () -> Unit,
     onDeleteClick: () -> Unit
 ) {
     Card(
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onItemClick)
     ) {
         Row(
             modifier = Modifier
@@ -152,6 +160,7 @@ fun HistoryScreenPreview() {
                     confidenceScore = 0.98
                 )
             ),
+            onItemClick = {},
             onDeleteClick = {},
             onBackClick = {}
         )
